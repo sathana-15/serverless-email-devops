@@ -2,7 +2,7 @@
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-ses-role-hackathon-v6" # Unique name
+  name = var.lambda_role_name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -14,7 +14,7 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_policy" {
+resource "aws_iam_role_policy_attachment" "lambda_basic_policy" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
@@ -23,23 +23,21 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
 # IAM Policy for SES
 # ---------------------------
 resource "aws_iam_policy" "ses_send_policy" {
-  name   = "lambda-ses-send-policy-v6" # Unique name
+  name   = var.ses_policy_name
   policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action   = [
-          "ses:SendEmail",
-          "ses:SendRawEmail"
-        ]
-        Effect   = "Allow"
-        Resource = "*"
-      }
-    ]
+    Version = "2012-10-17",
+    Statement = [{
+      Action   = [
+        "ses:SendEmail",
+        "ses:SendRawEmail"
+      ]
+      Effect   = "Allow"
+      Resource = "*"
+    }]
   })
 }
 
-resource "aws_iam_policy_attachment" "attach_ses" {
+resource "aws_iam_policy_attachment" "attach_ses_policy" {
   name       = "attach-ses-policy"
   roles      = [aws_iam_role.lambda_role.name]
   policy_arn = aws_iam_policy.ses_send_policy.arn
@@ -58,25 +56,27 @@ data "archive_file" "lambda_zip" {
 # Lambda function
 # ---------------------------
 resource "aws_lambda_function" "email_lambda" {
-  filename      = data.archive_file.lambda_zip.output_path
-  function_name = "email-notify-lambda-v6" # Unique name
-  role          = aws_iam_role.lambda_role.arn
-  handler       = "handler.lambda_handler"
-  runtime       = "python3.11"
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = var.lambda_name
+  role             = aws_iam_role.lambda_role.arn
+  handler          = var.lambda_handler
+  runtime          = var.lambda_runtime
+  source_code_hash = filebase64sha256(data.archive_file.lambda_zip.output_path)
 
   environment {
     variables = {
       SES_SENDER_EMAIL = var.ses_sender_email
-      # AWS_REGION removed (reserved key)
     }
   }
+
+  timeout = 15
 }
 
 # ---------------------------
 # API Gateway HTTP API
 # ---------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "email-api-v6" # Unique name
+  name          = "email-api-20251015"
   protocol_type = "HTTP"
 }
 
