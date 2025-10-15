@@ -2,7 +2,7 @@
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-ses-role-hackathon-v3"  # Unique name
+  name = "lambda-ses-role-hackathon-v6" # Unique name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -19,11 +19,13 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Allow Lambda to send SES emails
+# ---------------------------
+# IAM Policy for SES
+# ---------------------------
 resource "aws_iam_policy" "ses_send_policy" {
-  name   = "lambda-ses-send-policy-v3"  # Unique name
+  name   = "lambda-ses-send-policy-v6" # Unique name
   policy = jsonencode({
-    Version = "2012-10-17",
+    Version = "2012-10-17"
     Statement = [
       {
         Action   = [
@@ -38,7 +40,7 @@ resource "aws_iam_policy" "ses_send_policy" {
 }
 
 resource "aws_iam_policy_attachment" "attach_ses" {
-  name       = "attach-ses-policy-v3"
+  name       = "attach-ses-policy"
   roles      = [aws_iam_role.lambda_role.name]
   policy_arn = aws_iam_policy.ses_send_policy.arn
 }
@@ -57,7 +59,7 @@ data "archive_file" "lambda_zip" {
 # ---------------------------
 resource "aws_lambda_function" "email_lambda" {
   filename      = data.archive_file.lambda_zip.output_path
-  function_name = var.lambda_name
+  function_name = "email-notify-lambda-v6" # Unique name
   role          = aws_iam_role.lambda_role.arn
   handler       = "handler.lambda_handler"
   runtime       = "python3.11"
@@ -74,7 +76,7 @@ resource "aws_lambda_function" "email_lambda" {
 # API Gateway HTTP API
 # ---------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "email-api"
+  name          = "email-api-v6" # Unique name
   protocol_type = "HTTP"
 }
 

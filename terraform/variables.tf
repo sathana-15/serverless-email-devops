@@ -3,7 +3,7 @@ variable "aws_region" {
 }
 
 variable "lambda_name" {
-  default = "email-notify-lambda"
+  default = "email-notify-lambda-v6" # Match the Lambda function unique name
 }
 
 variable "ses_sender_email" {
