@@ -1,12 +1,15 @@
+# ---------------------------
+# IAM Role for Lambda
+# ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-ses-role"
+  name = "lambda-ses-role-hackathon"   # Renamed to avoid conflict
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = "sts:AssumeRole",
+      Action    = "sts:AssumeRole",
       Principal = { Service = "lambda.amazonaws.com" },
-      Effect = "Allow",
-      Sid = ""
+      Effect    = "Allow",
+      Sid       = ""
     }]
   })
 }
@@ -16,12 +19,24 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# ---------------------------
+# Automatically zip Lambda folder
+# ---------------------------
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_dir  = "../lambda"
+  output_path = "../terraform/lambda.zip"
+}
+
+# ---------------------------
+# Lambda function
+# ---------------------------
 resource "aws_lambda_function" "email_lambda" {
-  filename         = "../lambda/lambda.zip"
-  function_name    = var.lambda_name
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "handler.lambda_handler"
-  runtime          = "python3.11"
+  filename      = data.archive_file.lambda_zip.output_path
+  function_name = var.lambda_name
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "handler.lambda_handler"
+  runtime       = "python3.11"
 
   environment {
     variables = {
@@ -31,6 +46,9 @@ resource "aws_lambda_function" "email_lambda" {
   }
 }
 
+# ---------------------------
+# API Gateway HTTP API
+# ---------------------------
 resource "aws_apigatewayv2_api" "api" {
   name          = "email-api"
   protocol_type = "HTTP"
@@ -55,6 +73,9 @@ resource "aws_apigatewayv2_stage" "default" {
   auto_deploy = true
 }
 
+# ---------------------------
+# Lambda permission for API Gateway
+# ---------------------------
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
