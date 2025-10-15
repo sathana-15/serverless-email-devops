@@ -10,14 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      # ---------------------------
+      # 1. Checkout repo
+      # ---------------------------
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      # ---------------------------
+      # 2. Setup Python
+      # ---------------------------
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
+      # ---------------------------
+      # 3. Configure AWS credentials
+      # ---------------------------
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -25,11 +34,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Install Terraform
+      # ---------------------------
+      # 4. Install Terraform
+      # ---------------------------
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
+      # ---------------------------
+      # 5. Terraform Init
+      # ---------------------------
       - name: Terraform Init
         run: terraform -chdir=terraform init
 
+      # ---------------------------
+      # 6. Terraform Apply
+      # ---------------------------
       - name: Terraform Apply
         run: terraform -chdir=terraform apply -auto-approve
