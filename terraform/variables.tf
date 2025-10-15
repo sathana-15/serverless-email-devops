@@ -7,5 +7,5 @@ variable "lambda_name" {
 }
 
 variable "ses_sender_email" {
-  default = "youremail@gmail.com"  # Replace with your verified SES email
+  default = "sathana.rd2023cse@sece.ac.in"  # Replace with your verified SES email
 }

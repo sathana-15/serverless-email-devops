@@ -2,7 +2,7 @@
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-ses-role-hackathon"   # Renamed to avoid conflict
+  name = "lambda-ses-role-hackathon-v2" # Unique name to avoid conflicts
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -19,7 +19,7 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Optional: allow Lambda to send SES emails
+# Allow Lambda to send SES emails
 resource "aws_iam_policy" "ses_send_policy" {
   name   = "lambda-ses-send-policy"
   policy = jsonencode({
@@ -65,7 +65,7 @@ resource "aws_lambda_function" "email_lambda" {
   environment {
     variables = {
       SES_SENDER_EMAIL = var.ses_sender_email
-      # AWS_REGION removed — reserved key
+      # AWS_REGION removed (reserved key)
     }
   }
 }
