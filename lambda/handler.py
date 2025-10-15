@@ -1,14 +1,34 @@
+import json
 import boto3
 import os
 
+ses = boto3.client('ses')
+
 def lambda_handler(event, context):
-    ses_client = boto3.client('ses', region_name=os.environ['AWS_REGION'])
-    response = ses_client.send_email(
-        Source=os.environ['SES_SENDER_EMAIL'],
-        Destination={'ToAddresses': [event['to']]},
-        Message={
-            'Subject': {'Data': event['subject']},
-            'Body': {'Text': {'Data': event['body']}}
+    try:
+        # If triggered by API Gateway, the body comes as a JSON string
+        body = json.loads(event['body']) if 'body' in event else event
+
+        to_address = body['to']
+        subject = body['subject']
+        body_text = body['body']
+
+        response = ses.send_email(
+            Source=os.environ['SES_SENDER_EMAIL'],
+            Destination={'ToAddresses': [to_address]},
+            Message={
+                'Subject': {'Data': subject},
+                'Body': {'Text': {'Data': body_text}}
+            }
+        )
+
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'Email sent successfully!'})
         }
-    )
-    return {'status': 'Email sent', 'response': str(response)}
+
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
