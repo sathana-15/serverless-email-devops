@@ -19,6 +19,30 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# Optional: allow Lambda to send SES emails
+resource "aws_iam_policy" "ses_send_policy" {
+  name   = "lambda-ses-send-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy_attachment" "attach_ses" {
+  name       = "attach-ses-policy"
+  roles      = [aws_iam_role.lambda_role.name]
+  policy_arn = aws_iam_policy.ses_send_policy.arn
+}
+
 # ---------------------------
 # Automatically zip Lambda folder
 # ---------------------------
@@ -40,8 +64,8 @@ resource "aws_lambda_function" "email_lambda" {
 
   environment {
     variables = {
-      AWS_REGION       = var.aws_region
       SES_SENDER_EMAIL = var.ses_sender_email
+      # AWS_REGION removed — reserved key
     }
   }
 }
@@ -55,9 +79,9 @@ resource "aws_apigatewayv2_api" "api" {
 }
 
 resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id           = aws_apigatewayv2_api.api.id
-  integration_type = "AWS_PROXY"
-  integration_uri  = aws_lambda_function.email_lambda.arn
+  api_id                 = aws_apigatewayv2_api.api.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.email_lambda.arn
   payload_format_version = "2.0"
 }
 
