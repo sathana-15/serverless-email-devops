@@ -2,7 +2,7 @@
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-sendgrid-role-20251016"  # Unique role name
+  name = "lambda-sendgrid-role-20251016"  # Unique
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -24,7 +24,7 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
 # ---------------------------
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "../lambda"
+  source_dir  = "../lambda"   # Folder containing handler.py
   output_path = "../terraform/lambda.zip"
 }
 
@@ -33,14 +33,14 @@ data "archive_file" "lambda_zip" {
 # ---------------------------
 resource "aws_lambda_function" "send_email" {
   filename      = data.archive_file.lambda_zip.output_path
-  function_name = var.lambda_name  # Unique Lambda name from variables.tf
+  function_name = var.lambda_name
   role          = aws_iam_role.lambda_role.arn
   handler       = "handler.lambda_handler"
   runtime       = "python3.12"
 
   environment {
     variables = {
-      SENDGRID_API_KEY = var.sendgrid_api_key
+      SENDGRID_API_KEY  = var.sendgrid_api_key
       SES_SENDER_EMAIL = var.ses_sender_email
     }
   }

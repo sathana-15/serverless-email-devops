@@ -5,7 +5,7 @@ terraform {
       version = "~> 5.0"
     }
   }
-  backend "local" {}
+  required_version = ">= 1.3.0"
 }
 
 provider "aws" {
