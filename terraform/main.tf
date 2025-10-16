@@ -1,15 +1,8 @@
 # ---------------------------
-# AWS Provider
-# ---------------------------
-provider "aws" {
-  region = var.aws_region
-}
-
-# ---------------------------
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-sendgrid-role-20251016"
+  name = "lambda-sendgrid-role-20251016"  # unique role name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -21,13 +14,36 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic" {
+resource "aws_iam_role_policy_attachment" "lambda_policy" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 # ---------------------------
-# Lambda Function
+# Lambda permissions for sending emails
+# ---------------------------
+resource "aws_iam_policy" "sendgrid_policy" {
+  name   = "lambda-sendgrid-policy-20251016"  # unique
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action   = ["ses:SendEmail","ses:SendRawEmail"],
+        Effect   = "Allow",
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy_attachment" "attach_sendgrid_policy" {
+  name       = "attach-sendgrid-policy-20251016"
+  roles      = [aws_iam_role.lambda_role.name]
+  policy_arn = aws_iam_policy.sendgrid_policy.arn
+}
+
+# ---------------------------
+# Zip Lambda code
 # ---------------------------
 data "archive_file" "lambda_zip" {
   type        = "zip"
@@ -35,12 +51,15 @@ data "archive_file" "lambda_zip" {
   output_path = "../terraform/lambda.zip"
 }
 
-resource "aws_lambda_function" "send_email" {
+# ---------------------------
+# Lambda function
+# ---------------------------
+resource "aws_lambda_function" "email_lambda" {
   filename      = data.archive_file.lambda_zip.output_path
   function_name = var.lambda_name
+  role          = aws_iam_role.lambda_role.arn
   handler       = "handler.lambda_handler"
   runtime       = "python3.12"
-  role          = aws_iam_role.lambda_role.arn
 
   environment {
     variables = {
@@ -56,18 +75,18 @@ resource "aws_lambda_function" "send_email" {
 # API Gateway HTTP API
 # ---------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "sendgrid-api-20251016"
+  name          = "sendgrid-api-20251016"  # unique
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_integration" "lambda_integration" {
   api_id                 = aws_apigatewayv2_api.api.id
   integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.send_email.arn
+  integration_uri        = aws_lambda_function.email_lambda.arn
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_route" "post_send" {
+resource "aws_apigatewayv2_route" "default" {
   api_id    = aws_apigatewayv2_api.api.id
   route_key = "POST /send"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
@@ -85,7 +104,7 @@ resource "aws_apigatewayv2_stage" "default" {
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.send_email.function_name
+  function_name = aws_lambda_function.email_lambda.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
 }
