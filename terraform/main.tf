@@ -1,8 +1,15 @@
 # ---------------------------
+# Provider
+# ---------------------------
+provider "aws" {
+  region = var.aws_region
+}
+
+# ---------------------------
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-sendgrid-role-20251016"  # unique role name
+  name = "lambda-sendgrid-role-20251017"  # unique role name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -19,25 +26,23 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# ---------------------------
-# Lambda permissions for sending emails
-# ---------------------------
+# SendGrid/SES send policy
 resource "aws_iam_policy" "sendgrid_policy" {
-  name   = "lambda-sendgrid-policy-20251016"  # unique
+  name   = "lambda-sendgrid-policy-20251017"  # unique
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Action   = ["ses:SendEmail","ses:SendRawEmail"],
-        Effect   = "Allow",
+        Action   = ["ses:SendEmail", "ses:SendRawEmail"]
+        Effect   = "Allow"
         Resource = "*"
       }
     ]
   })
 }
 
-resource "aws_iam_policy_attachment" "attach_sendgrid_policy" {
-  name       = "attach-sendgrid-policy-20251016"
+resource "aws_iam_policy_attachment" "attach_sendgrid" {
+  name       = "attach-sendgrid-policy-20251017" # unique
   roles      = [aws_iam_role.lambda_role.name]
   policy_arn = aws_iam_policy.sendgrid_policy.arn
 }
@@ -63,8 +68,8 @@ resource "aws_lambda_function" "email_lambda" {
 
   environment {
     variables = {
-      SENDGRID_API_KEY  = var.sendgrid_api_key
-      SES_SENDER_EMAIL  = var.ses_sender_email
+      SENDGRID_API_KEY = var.sendgrid_api_key
+      SES_SENDER_EMAIL = var.ses_sender_email
     }
   }
 
@@ -75,7 +80,7 @@ resource "aws_lambda_function" "email_lambda" {
 # API Gateway HTTP API
 # ---------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "sendgrid-api-20251016"  # unique
+  name          = "sendgrid-api-20251017"
   protocol_type = "HTTP"
 }
 

@@ -2,13 +2,12 @@
 # AWS Region
 # ---------------------------
 variable "aws_region" {
-  description = "AWS region to deploy resources"
+  description = "AWS Region to deploy resources"
   type        = string
-  default     = "ap-south-1"
 }
 
 # ---------------------------
-# SendGrid and Sender Email Variables
+# SendGrid and Sender Email
 # ---------------------------
 variable "sendgrid_api_key" {
   description = "SendGrid API key for sending emails securely"
@@ -27,5 +26,5 @@ variable "ses_sender_email" {
 variable "lambda_name" {
   description = "Unique Lambda function name"
   type        = string
-  default     = "sendgrid-lambda-20251016"  # unique
+  default     = "sendgrid-lambda-20251017"  # unique name
 }
