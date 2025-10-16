@@ -19,5 +19,5 @@ variable "ses_sender_email" {
 variable "lambda_name" {
   description = "Unique Lambda function name"
   type        = string
-  default     = "sendgrid-lambda-20251016"  # unique to avoid duplication
+  default     = "sendgrid-lambda-20251016"
 }

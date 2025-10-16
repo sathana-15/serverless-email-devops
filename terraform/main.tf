@@ -2,7 +2,7 @@
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-sendgrid-role-20251016"  # ✅ Unique role name
+  name = "lambda-sendgrid-role-20251016"  # Unique role name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -14,7 +14,6 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
-# Attach basic Lambda execution policy
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
@@ -32,17 +31,17 @@ data "archive_file" "lambda_zip" {
 # ---------------------------
 # Lambda function
 # ---------------------------
-resource "aws_lambda_function" "email_lambda" {
+resource "aws_lambda_function" "send_email" {
   filename      = data.archive_file.lambda_zip.output_path
-  function_name = "sendgrid-email-lambda-20251016"  # ✅ Unique name
+  function_name = var.lambda_name
   role          = aws_iam_role.lambda_role.arn
   handler       = "handler.lambda_handler"
   runtime       = "python3.12"
 
   environment {
     variables = {
-      SENDGRID_API_KEY = var.sendgrid_api_key
-      SES_SENDER_EMAIL = var.ses_sender_email
+      SENDGRID_API_KEY  = var.sendgrid_api_key
+      SES_SENDER_EMAIL  = var.ses_sender_email
     }
   }
 
@@ -53,14 +52,14 @@ resource "aws_lambda_function" "email_lambda" {
 # API Gateway HTTP API
 # ---------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "sendgrid-email-api-20251016"  # ✅ Unique name
+  name          = "sendgrid-api-20251016"
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_integration" "lambda_integration" {
   api_id                 = aws_apigatewayv2_api.api.id
   integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.email_lambda.arn
+  integration_uri        = aws_lambda_function.send_email.arn
   payload_format_version = "2.0"
 }
 
@@ -82,18 +81,7 @@ resource "aws_apigatewayv2_stage" "default" {
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.email_lambda.function_name
+  function_name = aws_lambda_function.send_email.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
-}
-
-# ---------------------------
-# Variables
-# ---------------------------
-variable "sendgrid_api_key" {
-  description = "SendGrid API Key"
-}
-
-variable "ses_sender_email" {
-  description = "Sender email address"
 }

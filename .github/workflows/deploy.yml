@@ -1,49 +1,35 @@
-name: Deploy SendGrid Lambda API
+name: Deploy Lambda + Terraform
 
 on:
   push:
     branches:
-      - main  # Change if your main branch is named differently
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          terraform_version: 1.9.2
+          python-version: 3.11
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1  # 👈 Change if using another region
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Initialize Terraform
-        working-directory: terraform
-        run: terraform init
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
 
-      - name: Validate Terraform
-        working-directory: terraform
-        run: terraform validate
+      - name: Terraform Init
+        run: terraform -chdir=terraform init
 
-      - name: Plan Terraform Deployment
-        working-directory: terraform
-        run: terraform plan \
-          -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
-          -var="ses_sender_email=${{ secrets.SES_SENDER_EMAIL }}"
-
-      - name: Apply Terraform Deployment
-        working-directory: terraform
-        run: terraform apply -auto-approve \
-          -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
-          -var="ses_sender_email=${{ secrets.SES_SENDER_EMAIL }}"
-
-      - name: Confirm Deployment Success
-        run: echo "✅ Lambda + API Gateway successfully deployed!"
+      - name: Terraform Apply
+        run: terraform -chdir=terraform apply -auto-approve
