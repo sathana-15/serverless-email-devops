@@ -1,7 +1,6 @@
-# -----------------------------------
+# ---------------------------
 # SendGrid and Sender Email Variables
-# -----------------------------------
-
+# ---------------------------
 variable "sendgrid_api_key" {
   description = "SendGrid API key for sending emails securely"
   type        = string
@@ -13,11 +12,11 @@ variable "ses_sender_email" {
   type        = string
 }
 
-# -----------------------------------
+# ---------------------------
 # Lambda Function Name
-# -----------------------------------
+# ---------------------------
 variable "lambda_name" {
   description = "Unique Lambda function name"
   type        = string
-  default     = "sendgrid-lambda-20251016"
+  default     = "sendgrid-lambda-20251016"  # unique to avoid duplication
 }

@@ -33,15 +33,15 @@ data "archive_file" "lambda_zip" {
 # ---------------------------
 resource "aws_lambda_function" "send_email" {
   filename      = data.archive_file.lambda_zip.output_path
-  function_name = var.lambda_name
+  function_name = var.lambda_name  # Unique Lambda name from variables.tf
   role          = aws_iam_role.lambda_role.arn
   handler       = "handler.lambda_handler"
   runtime       = "python3.12"
 
   environment {
     variables = {
-      SENDGRID_API_KEY  = var.sendgrid_api_key
-      SES_SENDER_EMAIL  = var.ses_sender_email
+      SENDGRID_API_KEY = var.sendgrid_api_key
+      SES_SENDER_EMAIL = var.ses_sender_email
     }
   }
 
