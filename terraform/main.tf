@@ -1,15 +1,15 @@
-# ---------------------------
-# Provider
-# ---------------------------
+# -----------------------------------
+# AWS Provider
+# -----------------------------------
 provider "aws" {
   region = var.aws_region
 }
 
-# ---------------------------
+# -----------------------------------
 # IAM Role for Lambda
-# ---------------------------
+# -----------------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-sendgrid-role-20251017"  # unique role name
+  name = "lambda-sendgrid-role-20251017"  # unique
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -26,39 +26,39 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# SendGrid/SES send policy
 resource "aws_iam_policy" "sendgrid_policy" {
   name   = "lambda-sendgrid-policy-20251017"  # unique
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
-      {
-        Action   = ["ses:SendEmail", "ses:SendRawEmail"]
-        Effect   = "Allow"
-        Resource = "*"
-      }
-    ]
+    Statement = [{
+      Action   = [
+        "ses:SendEmail",
+        "ses:SendRawEmail"
+      ],
+      Effect   = "Allow",
+      Resource = "*"
+    }]
   })
 }
 
 resource "aws_iam_policy_attachment" "attach_sendgrid" {
-  name       = "attach-sendgrid-policy-20251017" # unique
+  name       = "attach-sendgrid-policy-20251017"
   roles      = [aws_iam_role.lambda_role.name]
   policy_arn = aws_iam_policy.sendgrid_policy.arn
 }
 
-# ---------------------------
+# -----------------------------------
 # Zip Lambda code
-# ---------------------------
+# -----------------------------------
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "../lambda"
   output_path = "../terraform/lambda.zip"
 }
 
-# ---------------------------
+# -----------------------------------
 # Lambda function
-# ---------------------------
+# -----------------------------------
 resource "aws_lambda_function" "email_lambda" {
   filename      = data.archive_file.lambda_zip.output_path
   function_name = var.lambda_name
@@ -76,11 +76,11 @@ resource "aws_lambda_function" "email_lambda" {
   timeout = 15
 }
 
-# ---------------------------
+# -----------------------------------
 # API Gateway HTTP API
-# ---------------------------
+# -----------------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "sendgrid-api-20251017"
+  name          = "email-api-20251017"
   protocol_type = "HTTP"
 }
 
@@ -103,9 +103,9 @@ resource "aws_apigatewayv2_stage" "default" {
   auto_deploy = true
 }
 
-# ---------------------------
+# -----------------------------------
 # Lambda permission for API Gateway
-# ---------------------------
+# -----------------------------------
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
