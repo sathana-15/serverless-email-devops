@@ -2,7 +2,7 @@
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-sendgrid-role-20251019"
+  name = "lambda-ses-role-20241010"  # Unique name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -19,9 +19,11 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# SendGrid Lambda policy
-resource "aws_iam_policy" "sendgrid_policy" {
-  name   = "lambda-sendgrid-policy-20251019"
+# ---------------------------
+# IAM Policy for SES
+# ---------------------------
+resource "aws_iam_policy" "ses_send_policy" {
+  name   = "lambda-ses-send-policy-20241010"  # Unique name
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -29,22 +31,22 @@ resource "aws_iam_policy" "sendgrid_policy" {
         Action   = [
           "ses:SendEmail",
           "ses:SendRawEmail"
-        ],
-        Effect   = "Allow",
+        ]
+        Effect   = "Allow"
         Resource = "*"
       }
     ]
   })
 }
 
-resource "aws_iam_policy_attachment" "attach_sendgrid" {
-  name       = "attach-sendgrid-policy-20251019"
+resource "aws_iam_policy_attachment" "attach_ses" {
+  name       = "attach-ses-policy-20241010"
   roles      = [aws_iam_role.lambda_role.name]
-  policy_arn = aws_iam_policy.sendgrid_policy.arn
+  policy_arn = aws_iam_policy.ses_send_policy.arn
 }
 
 # ---------------------------
-# Zip Lambda code
+# Automatically zip Lambda folder
 # ---------------------------
 data "archive_file" "lambda_zip" {
   type        = "zip"
@@ -57,26 +59,23 @@ data "archive_file" "lambda_zip" {
 # ---------------------------
 resource "aws_lambda_function" "email_lambda" {
   filename      = data.archive_file.lambda_zip.output_path
-  function_name = var.lambda_name
+  function_name = "email-notify-lambda-20241010"  # Unique name
   role          = aws_iam_role.lambda_role.arn
   handler       = "handler.lambda_handler"
-  runtime       = "python3.12"
+  runtime       = "python3.11"
 
   environment {
     variables = {
-      SENDGRID_API_KEY  = var.sendgrid_api_key
       SES_SENDER_EMAIL = var.ses_sender_email
     }
   }
-
-  timeout = 15
 }
 
 # ---------------------------
 # API Gateway HTTP API
 # ---------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "email-api-20251019"
+  name          = "email-api-20241010" # Unique name
   protocol_type = "HTTP"
 }
 
@@ -103,7 +102,7 @@ resource "aws_apigatewayv2_stage" "default" {
 # Lambda permission for API Gateway
 # ---------------------------
 resource "aws_lambda_permission" "apigw" {
-  statement_id  = "AllowAPIGatewayInvoke"
+  statement_id  = "AllowAPIGatewayInvoke-20241010"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.email_lambda.function_name
   principal     = "apigateway.amazonaws.com"
