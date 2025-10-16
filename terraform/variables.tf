@@ -1,14 +1,10 @@
-# -----------------------------------
-# AWS region
-# -----------------------------------
+# variables.tf
+
 variable "aws_region" {
-  description = "AWS region to deploy resources"
+  description = "AWS Region for deployment"
   type        = string
 }
 
-# -----------------------------------
-# SendGrid and Sender Email Variables
-# -----------------------------------
 variable "sendgrid_api_key" {
   description = "SendGrid API key for sending emails securely"
   type        = string
@@ -16,15 +12,12 @@ variable "sendgrid_api_key" {
 }
 
 variable "ses_sender_email" {
-  description = "Verified sender email address used for sending emails"
+  description = "Verified sender email address used for sending emails via SendGrid"
   type        = string
 }
 
-# -----------------------------------
-# Lambda Function Name
-# -----------------------------------
 variable "lambda_name" {
   description = "Unique Lambda function name"
   type        = string
-  default     = "sendgrid-lambda-20251017"  # unique to avoid duplication
+  default     = "sendgrid-lambda-20251018"  # change suffix if needed
 }

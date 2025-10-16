@@ -1,15 +1,8 @@
 # -----------------------------------
-# AWS Provider
-# -----------------------------------
-provider "aws" {
-  region = var.aws_region
-}
-
-# -----------------------------------
 # IAM Role for Lambda
 # -----------------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-sendgrid-role-20251017"  # unique
+  name = "lambda-sendgrid-role-20251018"  # unique role name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -26,23 +19,27 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# Policy for sending email via SendGrid (Lambda just needs basic execution)
 resource "aws_iam_policy" "sendgrid_policy" {
-  name   = "lambda-sendgrid-policy-20251017"  # unique
+  name   = "lambda-sendgrid-policy-20251018"  # unique
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Action   = [
-        "ses:SendEmail",
-        "ses:SendRawEmail"
-      ],
-      Effect   = "Allow",
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Action   = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Effect   = "Allow",
+        Resource = "*"
+      }
+    ]
   })
 }
 
 resource "aws_iam_policy_attachment" "attach_sendgrid" {
-  name       = "attach-sendgrid-policy-20251017"
+  name       = "attach-sendgrid-policy-20251018"
   roles      = [aws_iam_role.lambda_role.name]
   policy_arn = aws_iam_policy.sendgrid_policy.arn
 }
@@ -68,8 +65,8 @@ resource "aws_lambda_function" "email_lambda" {
 
   environment {
     variables = {
-      SENDGRID_API_KEY = var.sendgrid_api_key
-      SES_SENDER_EMAIL = var.ses_sender_email
+      SENDGRID_API_KEY  = var.sendgrid_api_key
+      SES_SENDER_EMAIL  = var.ses_sender_email
     }
   }
 
@@ -80,7 +77,7 @@ resource "aws_lambda_function" "email_lambda" {
 # API Gateway HTTP API
 # -----------------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "email-api-20251017"
+  name          = "email-api-20251018"
   protocol_type = "HTTP"
 }
 
