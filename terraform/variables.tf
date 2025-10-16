@@ -1,31 +1,31 @@
-# -----------------------------------
+# ---------------------------
 # AWS Region
-# -----------------------------------
+# ---------------------------
 variable "aws_region" {
-  description = "AWS region for deployment"
+  description = "AWS Region for deploying resources"
   type        = string
 }
 
-# -----------------------------------
+# ---------------------------
 # SendGrid API Key
-# -----------------------------------
+# ---------------------------
 variable "sendgrid_api_key" {
-  description = "SendGrid API key for sending emails securely"
+  description = "SendGrid API key for sending emails"
   type        = string
   sensitive   = true
 }
 
-# -----------------------------------
+# ---------------------------
 # Verified sender email
-# -----------------------------------
+# ---------------------------
 variable "ses_sender_email" {
-  description = "Verified sender email address used for sending emails"
+  description = "Verified sender email for sending emails"
   type        = string
 }
 
-# -----------------------------------
-# Lambda function name
-# -----------------------------------
+# ---------------------------
+# Lambda Function Name
+# ---------------------------
 variable "lambda_name" {
   description = "Unique Lambda function name"
   type        = string

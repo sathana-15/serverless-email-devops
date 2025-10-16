@@ -4,7 +4,7 @@ import requests
 
 def lambda_handler(event, context):
     try:
-        # Parse request body
+        # Parse request body from API Gateway
         body = json.loads(event['body']) if 'body' in event else event
 
         to_email = body.get('to')
