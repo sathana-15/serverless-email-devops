@@ -1,9 +1,11 @@
 import json
 import os
-import urllib.request
+import boto3
+from botocore.exceptions import ClientError
 
 def lambda_handler(event, context):
     try:
+        # Parse request body
         body = json.loads(event['body']) if 'body' in event else event
 
         to_email = body.get('to')
@@ -16,36 +18,28 @@ def lambda_handler(event, context):
                 "body": json.dumps({"error": "Missing 'to', 'subject', or 'body' fields"})
             }
 
-        url = "https://api.sendgrid.com/v3/mail/send"
-        headers = {
-            "Authorization": f"Bearer {os.environ['SENDGRID_API_KEY']}",
-            "Content-Type": "application/json"
-        }
+        # Create SES client
+        client = boto3.client('ses', region_name=os.environ.get('AWS_REGION', 'ap-south-1'))
 
-        data = {
-            "personalizations": [{"to": [{"email": to_email}]}],
-            "from": {"email": os.environ['SES_SENDER_EMAIL']},
-            "subject": subject,
-            "content": [{"type": "text/plain", "value": message}]
-        }
+        # Send email
+        response = client.send_email(
+            Source=os.environ['SES_SENDER_EMAIL'],
+            Destination={'ToAddresses': [to_email]},
+            Message={
+                'Subject': {'Data': subject},
+                'Body': {'Text': {'Data': message}}
+            }
+        )
 
-        req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers=headers, method="POST")
-        with urllib.request.urlopen(req) as response:
-            if response.status == 202:
-                return {
-                    "statusCode": 200,
-                    "body": json.dumps({"message": "✅ Email sent successfully via SendGrid!"})
-                }
-            else:
-                return {
-                    "statusCode": response.status,
-                    "body": response.read().decode()
-                }
-
-    except urllib.error.HTTPError as e:
         return {
-            "statusCode": e.code,
-            "body": e.read().decode()
+            "statusCode": 200,
+            "body": json.dumps({"message": "✅ Email sent successfully!", "response": response})
+        }
+
+    except ClientError as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": e.response['Error']['Message']})
         }
     except Exception as e:
         return {
