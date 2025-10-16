@@ -1,35 +1,49 @@
-name: Deploy Lambda + Terraform
+name: Deploy SendGrid Lambda API
 
 on:
   push:
     branches:
-      - main
+      - main  # Change if your main branch is named differently
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          python-version: 3.11
+          terraform_version: 1.9.2
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ap-south-1  # 👈 Change if using another region
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Initialize Terraform
+        working-directory: terraform
+        run: terraform init
 
-      - name: Terraform Init
-        run: terraform -chdir=terraform init
+      - name: Validate Terraform
+        working-directory: terraform
+        run: terraform validate
 
-      - name: Terraform Apply
-        run: terraform -chdir=terraform apply -auto-approve
+      - name: Plan Terraform Deployment
+        working-directory: terraform
+        run: terraform plan \
+          -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
+          -var="ses_sender_email=${{ secrets.SES_SENDER_EMAIL }}"
+
+      - name: Apply Terraform Deployment
+        working-directory: terraform
+        run: terraform apply -auto-approve \
+          -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
+          -var="ses_sender_email=${{ secrets.SES_SENDER_EMAIL }}"
+
+      - name: Confirm Deployment Success
+        run: echo "✅ Lambda + API Gateway successfully deployed!"

@@ -1,14 +1,23 @@
-variable "lambda_name" {
-  description = "Lambda function name"
-  default     = "email-notify-lambda-20251015-v2"
+# -----------------------------------
+# SendGrid and Sender Email Variables
+# -----------------------------------
+
+variable "sendgrid_api_key" {
+  description = "SendGrid API key for sending emails securely"
+  type        = string
+  sensitive   = true
 }
 
 variable "ses_sender_email" {
-  description = "SES verified sender email"
-  default     = "sathana.rd2023cse@sece.ac.in"
+  description = "Verified sender email address used for sending emails"
+  type        = string
 }
 
-variable "aws_region" {
-  description = "AWS Region"
-  default     = "ap-south-1"
+# -----------------------------------
+# Lambda Function Name
+# -----------------------------------
+variable "lambda_name" {
+  description = "Unique Lambda function name"
+  type        = string
+  default     = "sendgrid-lambda-20251016"  # unique to avoid duplication
 }

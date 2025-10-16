@@ -2,7 +2,7 @@
 # IAM Role for Lambda
 # ---------------------------
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda-ses-role-20251015-v2"  # Unique role name
+  name = "lambda-sendgrid-role-20251016"  # ✅ Unique role name
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -14,33 +14,10 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
+# Attach basic Lambda execution policy
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-# SES send email policy
-resource "aws_iam_policy" "ses_send_policy" {
-  name   = "lambda-ses-send-policy-20251015-v2"  # Unique
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action   = [
-          "ses:SendEmail",
-          "ses:SendRawEmail"
-        ],
-        Effect   = "Allow",
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_policy_attachment" "attach_ses" {
-  name       = "attach-ses-policy-20251015-v2"
-  roles      = [aws_iam_role.lambda_role.name]
-  policy_arn = aws_iam_policy.ses_send_policy.arn
 }
 
 # ---------------------------
@@ -57,13 +34,14 @@ data "archive_file" "lambda_zip" {
 # ---------------------------
 resource "aws_lambda_function" "email_lambda" {
   filename      = data.archive_file.lambda_zip.output_path
-  function_name = var.lambda_name
+  function_name = "sendgrid-email-lambda-20251016"  # ✅ Unique name
   role          = aws_iam_role.lambda_role.arn
   handler       = "handler.lambda_handler"
-  runtime       = "python3.11"
+  runtime       = "python3.12"
 
   environment {
     variables = {
+      SENDGRID_API_KEY = var.sendgrid_api_key
       SES_SENDER_EMAIL = var.ses_sender_email
     }
   }
@@ -75,7 +53,7 @@ resource "aws_lambda_function" "email_lambda" {
 # API Gateway HTTP API
 # ---------------------------
 resource "aws_apigatewayv2_api" "api" {
-  name          = "email-api-20251015-v2"
+  name          = "sendgrid-email-api-20251016"  # ✅ Unique name
   protocol_type = "HTTP"
 }
 
@@ -107,4 +85,15 @@ resource "aws_lambda_permission" "apigw" {
   function_name = aws_lambda_function.email_lambda.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
+}
+
+# ---------------------------
+# Variables
+# ---------------------------
+variable "sendgrid_api_key" {
+  description = "SendGrid API Key"
+}
+
+variable "ses_sender_email" {
+  description = "Sender email address"
 }

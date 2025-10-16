@@ -1,41 +1,49 @@
 import json
-import boto3
-
-# Directly set your SES region
-ses = boto3.client('ses', region_name='ap-south-1')
+import os
+import requests
 
 def lambda_handler(event, context):
     try:
-        # If triggered by API Gateway, body comes as a JSON string
+        # Parse request body
         body = json.loads(event['body']) if 'body' in event else event
 
-        to_address = body['to']
-        subject = body['subject']
-        body_text = body['body']
+        to_email = body.get('to')
+        subject = body.get('subject')
+        message = body.get('body')
 
-        print(f"Sending email to: {to_address}")
-        print(f"Subject: {subject}")
-        print(f"Body: {body_text}")
-
-        response = ses.send_email(
-            Source='sathana.rd2023cse@sece.ac.in',  # Replace with your verified SES sender email
-            Destination={'ToAddresses': [to_address]},
-            Message={
-                'Subject': {'Data': subject},
-                'Body': {'Text': {'Data': body_text}}
+        if not all([to_email, subject, message]):
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Missing 'to', 'subject', or 'body' fields"})
             }
-        )
 
-        print(f"SES Response: {response}")
-
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'message': 'Email sent successfully!'})
+        headers = {
+            "Authorization": f"Bearer {os.environ['SENDGRID_API_KEY']}",
+            "Content-Type": "application/json"
         }
 
+        data = {
+            "personalizations": [{"to": [{"email": to_email}]}],
+            "from": {"email": os.environ['SES_SENDER_EMAIL']},
+            "subject": subject,
+            "content": [{"type": "text/plain", "value": message}]
+        }
+
+        response = requests.post("https://api.sendgrid.com/v3/mail/send", headers=headers, json=data)
+
+        if response.status_code == 202:
+            return {
+                "statusCode": 200,
+                "body": json.dumps({"message": "✅ Email sent successfully via SendGrid!"})
+            }
+        else:
+            return {
+                "statusCode": response.status_code,
+                "body": json.dumps({"error": response.text})
+            }
+
     except Exception as e:
-        print(f"Error: {str(e)}")
         return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
         }
